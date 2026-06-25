@@ -1,0 +1,1251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="pageTitle">EduVision - Voice-First Textbook Summarizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+            line-height: 1.6;
+            color: #E8E8E8;
+            background: #0A0E27;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        /* ANIMATED BACKGROUND */
+        .animated-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: linear-gradient(135deg, #0A0E27 0%, #1A1F3A 25%, #2D1B4E 50%, #1A1F3A 75%, #0A0E27 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        /* FLOATING PARTICLES */
+        .particle {
+            position: fixed;
+            border-radius: 50%;
+            pointer-events: none;
+            opacity: 0.15;
+            animation: float linear infinite;
+        }
+        
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.15;
+            }
+            90% {
+                opacity: 0.15;
+            }
+            100% {
+                transform: translateY(-100px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* VOICE STATUS - Modern Glassmorphism */
+        .voice-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 14px 20px;
+            z-index: 1000;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .voice-status.active {
+            background: rgba(76, 175, 80, 0.15);
+            border-color: rgba(76, 175, 80, 0.4);
+            box-shadow: 0 8px 32px rgba(76, 175, 80, 0.2);
+        }
+        
+        .voice-status.inactive {
+            background: rgba(255, 255, 255, 0.03);
+            border-color: rgba(255, 255, 255, 0.08);
+        }
+        
+        .voice-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .voice-icon {
+            font-size: 20px;
+            filter: drop-shadow(0 0 8px currentColor);
+        }
+        
+        .voice-status.active .voice-icon {
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.15); opacity: 0.8; }
+        }
+        
+        /* LANGUAGE SELECTOR - Modern Style */
+        .language-selector {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 10px 14px;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+        
+        .language-selector:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(124, 77, 255, 0.4);
+        }
+        
+        .language-selector select {
+            background: transparent;
+            color: #E8E8E8;
+            border: none;
+            outline: none;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            padding: 2px 8px;
+        }
+        
+        .language-selector select option {
+            background: #1A1F3A;
+            color: #E8E8E8;
+        }
+        
+        /* HEADER - Elegant & Modern */
+        .header {
+            text-align: center;
+            margin: 90px 0 50px 0;
+            animation: fadeInDown 0.8s ease;
+        }
+        
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .header h1 {
+            font-size: 3.8em;
+            font-weight: 800;
+            background: linear-gradient(135deg, #7C4DFF 0%, #00BCD4 50%, #7C4DFF 100%);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientText 3s linear infinite;
+            margin-bottom: 18px;
+            letter-spacing: -1px;
+        }
+        
+        @keyframes gradientText {
+            to { background-position: 200% center; }
+        }
+        
+        .header p {
+            font-size: 1.15em;
+            color: #B8B8D1;
+            background: rgba(124, 77, 255, 0.08);
+            padding: 12px 28px;
+            border-radius: 30px;
+            display: inline-block;
+            border: 1px solid rgba(124, 77, 255, 0.2);
+            font-weight: 500;
+        }
+        
+        /* UPLOAD SECTION - Clean & Modern */
+        .upload-section {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 2px dashed rgba(124, 77, 255, 0.3);
+            border-radius: 24px;
+            padding: 60px 40px;
+            text-align: center;
+            margin-bottom: 50px;
+            transition: all 0.4s ease;
+            animation: fadeInUp 0.8s ease 0.2s both;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .upload-section:hover {
+            background: rgba(124, 77, 255, 0.05);
+            border-color: rgba(124, 77, 255, 0.5);
+            box-shadow: 0 12px 40px rgba(124, 77, 255, 0.15);
+            transform: translateY(-2px);
+        }
+        
+        .upload-section.drag-over {
+            border-color: #7C4DFF;
+            background: rgba(124, 77, 255, 0.1);
+            border-style: solid;
+            transform: scale(1.02);
+        }
+        
+        .upload-title {
+            font-size: 2.2em;
+            background: linear-gradient(135deg, #7C4DFF, #00BCD4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 12px;
+            font-weight: 700;
+        }
+        
+        .upload-subtitle {
+            font-size: 1.05em;
+            color: #B8B8D1;
+            margin-bottom: 30px;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .upload-btn {
+            background: linear-gradient(135deg, #7C4DFF 0%, #5E35B1 100%);
+            color: #FFFFFF;
+            border: none;
+            padding: 16px 48px;
+            font-size: 17px;
+            font-weight: 600;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 24px rgba(124, 77, 255, 0.35);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .upload-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        
+        .upload-btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+        
+        .upload-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 32px rgba(124, 77, 255, 0.5);
+        }
+        
+        .upload-btn:active {
+            transform: translateY(-1px);
+        }
+        
+        /* LANGUAGE OPTIONS - Modern Pills */
+        .language-options {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin: 35px 0 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .lang-option {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1.5px solid rgba(255, 255, 255, 0.15);
+            color: #B8B8D1;
+            border-radius: 30px;
+            padding: 10px 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            font-weight: 600;
+            backdrop-filter: blur(10px);
+        }
+        
+        .lang-option.selected {
+            background: linear-gradient(135deg, #7C4DFF 0%, #5E35B1 100%);
+            color: #FFFFFF;
+            border-color: #7C4DFF;
+            box-shadow: 0 6px 20px rgba(124, 77, 255, 0.4);
+            transform: scale(1.05);
+        }
+        
+        .lang-option:hover:not(.selected) {
+            border-color: #7C4DFF;
+            background: rgba(124, 77, 255, 0.1);
+            transform: translateY(-2px);
+        }
+        
+        /* PROCESSING STATUS - Elegant Loader */
+        .processing-status, .loading {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(124, 77, 255, 0.3);
+            border-radius: 20px;
+            padding: 30px;
+            margin: 30px 0;
+            text-align: center;
+            display: none;
+        }
+        
+        .processing-status.show, .loading.show {
+            display: block;
+            animation: fadeInUp 0.5s ease;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(124, 77, 255, 0.2);
+            border-top: 4px solid #7C4DFF;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 20px;
+            box-shadow: 0 0 20px rgba(124, 77, 255, 0.3);
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* STATUS MESSAGES - Clean Alerts */
+        .status-message {
+            text-align: center;
+            padding: 16px 28px;
+            margin: 25px 0;
+            border-radius: 14px;
+            font-weight: 500;
+            border: 1px solid;
+            backdrop-filter: blur(10px);
+            animation: slideIn 0.4s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .success { 
+            background: rgba(76, 175, 80, 0.1); 
+            color: #81C784; 
+            border-color: rgba(76, 175, 80, 0.4);
+        }
+        
+        .error { 
+            background: rgba(244, 67, 54, 0.1); 
+            color: #E57373; 
+            border-color: rgba(244, 67, 54, 0.4);
+        }
+        
+        .info { 
+            background: rgba(124, 77, 255, 0.1); 
+            color: #B39DDB; 
+            border-color: rgba(124, 77, 255, 0.4);
+        }
+        
+        /* RESULTS SECTION - Clean Cards */
+        .results-section {
+            display: none;
+            margin: 50px 0;
+            animation: fadeInUp 0.6s ease;
+        }
+        
+        .file-info, .text-display {
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 18px;
+            padding: 28px;
+            margin: 20px 0;
+            border-left: 4px solid #7C4DFF;
+            transition: all 0.3s ease;
+        }
+        
+        .file-info:hover, .text-display:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-left-color: #00BCD4;
+            transform: translateX(4px);
+        }
+        
+        .text-display h3 {
+            color: #7C4DFF;
+            margin-bottom: 18px;
+            font-size: 1.4em;
+            font-weight: 700;
+        }
+        
+        .text-display {
+            max-height: 320px;
+            overflow-y: auto;
+        }
+        
+        .text-display::-webkit-scrollbar {
+            width: 10px;
+        }
+        
+        .text-display::-webkit-scrollbar-track {
+            background: rgba(124, 77, 255, 0.1);
+            border-radius: 10px;
+        }
+        
+        .text-display::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #7C4DFF, #00BCD4);
+            border-radius: 10px;
+        }
+        
+        .text-display::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #5E35B1, #0097A7);
+        }
+        
+        /* AUDIO PLAYER - Modern Design */
+        .audio-player {
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 18px;
+            padding: 28px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .audio-player h3 {
+            color: #7C4DFF;
+            margin-bottom: 18px;
+            font-weight: 700;
+        }
+        
+        .audio-player audio {
+            width: 100%;
+            max-width: 500px;
+            margin: 10px auto;
+            filter: drop-shadow(0 4px 12px rgba(124, 77, 255, 0.2));
+        }
+        
+        /* STATS - Modern Cards */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            padding: 24px;
+            border-radius: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            margin: 20px 0;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 16px;
+            background: rgba(124, 77, 255, 0.05);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+        
+        .stat-item:hover {
+            background: rgba(124, 77, 255, 0.15);
+            transform: translateY(-4px);
+        }
+        
+        .stat-number {
+            font-size: 28px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #7C4DFF, #00BCD4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .stat-label {
+            color: #B8B8D1;
+            font-size: 13px;
+            margin-top: 6px;
+            font-weight: 500;
+        }
+        
+        /* DETAILS SECTION - Elegant Info Cards */
+        .eduvision-details {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 24px;
+            padding: 40px;
+            margin: 50px 0;
+            animation: fadeInUp 0.8s ease 0.4s both;
+        }
+        
+        .details-title {
+            background: linear-gradient(135deg, #7C4DFF, #00BCD4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 2.2em;
+            text-align: center;
+            margin-bottom: 35px;
+            font-weight: 800;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .feature-card {
+            background: rgba(124, 77, 255, 0.04);
+            border: 1px solid rgba(124, 77, 255, 0.2);
+            border-radius: 16px;
+            padding: 24px;
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, #7C4DFF, #00BCD4);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.4s ease;
+        }
+        
+        .feature-card:hover::before {
+            transform: scaleX(1);
+        }
+        
+        .feature-card:hover {
+            background: rgba(124, 77, 255, 0.1);
+            border-color: #7C4DFF;
+            transform: translateY(-6px);
+            box-shadow: 0 12px 32px rgba(124, 77, 255, 0.2);
+        }
+        
+        .feature-card h4 {
+            color: #7C4DFF;
+            margin-bottom: 12px;
+            font-size: 1.15em;
+            font-weight: 700;
+        }
+        
+        .feature-card p {
+            color: #B8B8D1;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        /* VOICE COMMANDS SECTION */
+        .voice-commands-section {
+            background: linear-gradient(135deg, rgba(124, 77, 255, 0.08), rgba(0, 188, 212, 0.08));
+            border: 1px solid rgba(124, 77, 255, 0.3);
+            border-radius: 20px;
+            padding: 32px;
+            margin: 40px 0;
+            backdrop-filter: blur(10px);
+        }
+        
+        .voice-commands-title {
+            background: linear-gradient(135deg, #7C4DFF, #00BCD4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 1.8em;
+            text-align: center;
+            margin-bottom: 28px;
+            font-weight: 700;
+        }
+        
+        .commands-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 14px;
+        }
+        
+        .command-item {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 14px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .command-item:hover {
+            background: rgba(124, 77, 255, 0.15);
+            border-color: #7C4DFF;
+            transform: scale(1.05);
+        }
+        
+        .command-english {
+            color: #7C4DFF;
+            font-weight: 700;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+        
+        .command-hindi {
+            color: #B8B8D1;
+            font-size: 12px;
+            font-style: italic;
+        }
+        
+        /* MOBILE RESPONSIVENESS */
+        @media (max-width: 768px) {
+            .header h1 { 
+                font-size: 2.5em; 
+            }
+            
+            .voice-status, .language-selector {
+                position: static;
+                margin: 10px auto 20px;
+                display: inline-block;
+            }
+            
+            .upload-section {
+                padding: 40px 24px;
+            }
+            
+            .features-grid, .commands-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .language-options {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .stats {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        
+        /* ACCESSIBILITY */
+        button:focus, .lang-option:focus, select:focus {
+            outline: 3px solid #7C4DFF;
+            outline-offset: 2px;
+        }
+        
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="animated-bg"></div>
+    
+    <!-- Floating Particles -->
+    <div id="particles"></div>
+
+    <!-- Voice Status Indicator -->
+    <div class="voice-status inactive" id="voiceStatus">
+        <div class="voice-indicator">
+            <span class="voice-icon">🎤</span>
+            <div>
+                <div id="voiceStatusText">Voice Ready</div>
+                <small id="voiceStatusDetail">Say "Voice"</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Language Selector -->
+    <div class="language-selector">
+        <select id="languageSelect" onchange="changeLanguage()" aria-label="Select Interface Language">
+            <option value="en">🇺🇸 English</option>
+            <option value="hi">🇮🇳 हिंदी</option>
+            <option value="es">🇪🇸 Español</option>
+            <option value="fr">🇫🇷 Français</option>
+            <option value="de">🇩🇪 Deutsch</option>
+        </select>
+    </div>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1 id="mainTitle">🎓 EduVision</h1>
+            <p id="subtitle">Say "Voice" to activate voice control</p>
+        </div>
+        
+        <!-- Upload Section -->
+        <div class="upload-section" id="uploadSection">
+            <div class="upload-title" id="uploadTitle">📁 Upload Your Educational Content</div>
+            <div class="upload-subtitle" id="uploadSubtitle">Drag and drop a file or click to select</div>
+            
+            <input type="file" id="fileInput" class="file-input" accept="image/*,.pdf" aria-label="Upload file">
+            <button class="upload-btn" id="chooseFileBtn" onclick="document.getElementById('fileInput').click()">
+                Choose File
+            </button>
+            
+            <div class="language-options">
+                <div class="lang-option selected" data-lang="en" onclick="selectTargetLanguage('en')" role="button" tabindex="0">
+                    🇺🇸 English
+                </div>
+                <div class="lang-option" data-lang="hi" onclick="selectTargetLanguage('hi')" role="button" tabindex="0">
+                    🇮🇳 हिंदी
+                </div>
+                <div class="lang-option" data-lang="es" onclick="selectTargetLanguage('es')" role="button" tabindex="0">
+                    🇪🇸 Español
+                </div>
+                <div class="lang-option" data-lang="fr" onclick="selectTargetLanguage('fr')" role="button" tabindex="0">
+                    🇫🇷 Français
+                </div>
+                <div class="lang-option" data-lang="de" onclick="selectTargetLanguage('de')" role="button" tabindex="0">
+                    🇩🇪 Deutsch
+                </div>
+            </div>
+        </div>
+        
+        <!-- Processing Status -->
+        <div class="processing-status" id="processingStatus">
+            <h3>⚡ Processing Your Content</h3>
+            <div class="spinner"></div>
+            <p id="processingMessage">Fast processing in progress...</p>
+        </div>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p id="processingText">Processing your content...</p>
+        </div>
+        
+        <!-- Status Messages -->
+        <div id="statusMessage" role="alert" aria-live="polite"></div>
+        
+        <!-- Results Section -->
+        <div class="results-section" id="resultsSection">
+            <div class="file-info" id="fileInfo"></div>
+            <div class="stats" id="stats"></div>
+            
+            <div class="text-display">
+                <h3 id="extractedTextTitle">📄 Extracted Text</h3>
+                <div id="extractedText"></div>
+            </div>
+            
+            <div class="text-display" id="translatedSection" style="display: none;">
+                <h3 id="translatedTextTitle">🌐 Translated Text</h3>
+                <div id="translatedText"></div>
+            </div>
+            
+            <div class="text-display">
+                <h3 id="summaryTitle">📝 AI Summary</h3>
+                <div id="summaryText"></div>
+            </div>
+            
+            <div class="audio-player" id="audioPlayer"></div>
+        </div>
+        
+        <!-- EduVision Details Section -->
+        <div class="eduvision-details">
+            <h2 class="details-title">🌟 About EduVision</h2>
+            
+            <div class="features-grid">
+                <div class="feature-card">
+                    <h4>🎤 Voice-First Design</h4>
+                    <p>Completely hands-free operation designed for visually impaired users. Just speak your commands!</p>
+                </div>
+                
+                <div class="feature-card">
+                    <h4>🧠 AI-Powered Summarization</h4>
+                    <p>Advanced AI creates intelligent summaries of your textbooks and documents instantly.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <h4>🌍 Multi-Language Support</h4>
+                    <p>Full support for English, Hindi, Spanish, French, and German - both text and voice.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <h4>⚡ Lightning Fast</h4>
+                    <p>Optimized algorithms ensure quick text extraction from PDFs and images with OCR.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <h4>🔊 Text-to-Speech</h4>
+                    <p>High-quality audio generation in multiple languages for immediate accessibility.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <h4>♿ Accessibility First</h4>
+                    <p>Built with screen readers, keyboard navigation, and voice control as primary interfaces.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Voice Commands Guide -->
+        <div class="voice-commands-section">
+            <h3 class="voice-commands-title">🎙️ Voice Commands Guide</h3>
+            <div class="commands-grid">
+                <div class="command-item">
+                    <div class="command-english">"Voice"</div>
+                    <div class="command-hindi">"आवाज़"</div>
+                </div>
+                <div class="command-item">
+                    <div class="command-english">"Summarize"</div>
+                    <div class="command-hindi">"सारांश"</div>
+                </div>
+                <div class="command-item">
+                    <div class="command-english">"Read"</div>
+                    <div class="command-hindi">"पढ़ें"</div>
+                </div>
+                <div class="command-item">
+                    <div class="command-english">"Short Summary"</div>
+                    <div class="command-hindi">"छोटा सारांश"</div>
+                </div>
+                <div class="command-item">
+                    <div class="command-english">"Long Summary"</div>
+                    <div class="command-hindi">"लंबा सारांश"</div>
+                </div>
+                <div class="command-item">
+                    <div class="command-english">"Translate"</div>
+                    <div class="command-hindi">"अनुवाद"</div>
+                </div>
+                <div class="command-item">
+                    <div class="command-english">"Help"</div>
+                    <div class="command-hindi">"मदद"</div>
+                </div>
+                <div class="command-item">
+                    <div class="command-english">"Stop Voice"</div>
+                    <div class="command-hindi">"आवाज़ बंद"</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let currentLanguage = 'en';
+        let targetLanguage = 'en';
+        let supportedLanguages = {};
+        let translations = {};
+        let voiceStatusInterval;
+        let isProcessing = false;
+        
+        // Create floating particles
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = 20;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                
+                const size = Math.random() * 60 + 20;
+                const startX = Math.random() * window.innerWidth;
+                const duration = Math.random() * 20 + 15;
+                const delay = Math.random() * 5;
+                
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                particle.style.left = `${startX}px`;
+                particle.style.animationDuration = `${duration}s`;
+                particle.style.animationDelay = `${delay}s`;
+                particle.style.background = `radial-gradient(circle, ${
+                    Math.random() > 0.5 ? 'rgba(124, 77, 255, 0.3)' : 'rgba(0, 188, 212, 0.3)'
+                }, transparent)`;
+                
+                particlesContainer.appendChild(particle);
+            }
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            createParticles();
+            loadSupportedLanguages();
+            loadTranslations('en');
+            startVoiceStatusMonitoring();
+            announceStartup();
+        });
+        
+        function announceStartup() {
+            setTimeout(() => {
+                showStatus('EduVision is ready! Upload your file above, then say "Voice" to activate.', 'info');
+            }, 1000);
+        }
+        
+        function loadSupportedLanguages() {
+            fetch('/get_languages')
+                .then(response => response.json())
+                .then(data => {
+                    supportedLanguages = data.languages;
+                })
+                .catch(error => console.error('Error loading languages:', error));
+        }
+        
+        function loadTranslations(language) {
+            fetch(`/get_translations/${language}`)
+                .then(response => response.json())
+                .then(data => {
+                    translations = data.translations;
+                    updateUIText();
+                })
+                .catch(error => console.error('Error loading translations:', error));
+        }
+        
+        function startVoiceStatusMonitoring() {
+            voiceStatusInterval = setInterval(updateVoiceStatus, 1500);
+        }
+        
+        function updateVoiceStatus() {
+            fetch('/get_voice_status')
+                .then(response => response.json())
+                .then(data => {
+                    const statusDiv = document.getElementById('voiceStatus');
+                    const statusText = document.getElementById('voiceStatusText');
+                    const statusDetail = document.getElementById('voiceStatusDetail');
+                    
+                    if (data.commands_active) {
+                        statusDiv.classList.remove('inactive');
+                        statusDiv.classList.add('active');
+                        statusText.textContent = 'Voice Active';
+                        statusDetail.textContent = 'Listening...';
+                    } else if (data.always_listening) {
+                        statusDiv.classList.add('inactive');
+                        statusDiv.classList.remove('active');
+                        statusText.textContent = 'Voice Ready';
+                        statusDetail.textContent = 'Say "Voice"';
+                    } else {
+                        statusDiv.classList.add('inactive');
+                        statusDiv.classList.remove('active');
+                        statusText.textContent = 'Voice Offline';
+                        statusDetail.textContent = 'Not listening';
+                    }
+                })
+                .catch(error => console.error('Error checking voice status:', error));
+        }
+        
+        function updateUIText() {
+            document.getElementById('pageTitle').textContent = translations.title;
+            document.getElementById('subtitle').textContent = translations.subtitle;
+            document.getElementById('uploadTitle').textContent = translations.upload_title;
+            document.getElementById('uploadSubtitle').textContent = translations.upload_subtitle;
+            document.getElementById('chooseFileBtn').textContent = translations.choose_file;
+            document.getElementById('extractedTextTitle').textContent = translations.extracted_text;
+            document.getElementById('summaryTitle').textContent = translations.summary;
+            document.getElementById('processingText').textContent = translations.processing;
+        }
+        
+        function changeLanguage() {
+            const select = document.getElementById('languageSelect');
+            currentLanguage = select.value;
+            loadTranslations(currentLanguage);
+        }
+        
+        function selectTargetLanguage(lang) {
+            targetLanguage = lang;
+            
+            document.querySelectorAll('.lang-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            document.querySelector(`[data-lang="${lang}"]`).classList.add('selected');
+            
+            const langName = supportedLanguages[lang]?.name || lang;
+            showStatus(`Selected ${langName} for processing`, 'info');
+        }
+        
+        // File upload handling
+        document.getElementById('fileInput').addEventListener('change', handleFileUpload);
+        
+        const uploadSection = document.getElementById('uploadSection');
+        
+        uploadSection.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadSection.classList.add('drag-over');
+        });
+        
+        uploadSection.addEventListener('dragleave', () => {
+            uploadSection.classList.remove('drag-over');
+        });
+        
+        uploadSection.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadSection.classList.remove('drag-over');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+        
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        }
+        
+        function handleFile(file) {
+            if (isProcessing) {
+                showStatus('Please wait, still processing previous file.', 'error');
+                return;
+            }
+            
+            const fileType = file.type;
+            const fileName = file.name.toLowerCase();
+            
+            if (!fileType.startsWith('image/') && !fileName.endsWith('.pdf')) {
+                showStatus('Please upload an image file or PDF document.', 'error');
+                return;
+            }
+            
+            isProcessing = true;
+            showProcessingStatus(true);
+            
+            const langName = supportedLanguages[targetLanguage]?.name || targetLanguage;
+            showStatus(`Processing ${fileName} in ${langName}...`, 'info');
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('summary_type', 'medium');
+            formData.append('target_language', targetLanguage);
+            formData.append('ocr_language', supportedLanguages[targetLanguage]?.tesseract_lang || 'eng');
+            
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                isProcessing = false;
+                showProcessingStatus(false);
+                
+                if (data.success) {
+                    displayResults(data);
+                    showStatus('File processed successfully! Say "Voice" then "Summarize" to hear it.', 'success');
+                } else {
+                    showStatus('Error: ' + data.error, 'error');
+                }
+            })
+            .catch(error => {
+                isProcessing = false;
+                showProcessingStatus(false);
+                showStatus('Upload failed: ' + error.message, 'error');
+            });
+        }
+        
+        function showProcessingStatus(show) {
+            const statusDiv = document.getElementById('processingStatus');
+            const messageDiv = document.getElementById('processingMessage');
+            
+            if (show) {
+                statusDiv.classList.add('show');
+                const langName = supportedLanguages[targetLanguage]?.name || targetLanguage;
+                messageDiv.textContent = `Fast processing active for ${langName}...`;
+            } else {
+                statusDiv.classList.remove('show');
+            }
+        }
+        
+        function displayResults(data) {
+            const langName = supportedLanguages[data.target_language]?.name || data.target_language;
+            const detectedLangName = supportedLanguages[data.detected_language]?.name || data.detected_language;
+            
+            const fileInfo = document.getElementById('fileInfo');
+            fileInfo.innerHTML = `
+                <h4 style="color: #7C4DFF; margin-bottom: 15px; font-weight: 700;">📋 File Information</h4>
+                <p style="color: #B8B8D1; margin: 8px 0;"><strong>File:</strong> ${data.filename}</p>
+                <p style="color: #B8B8D1; margin: 8px 0;"><strong>Type:</strong> ${data.file_type.toUpperCase()}</p>
+                <p style="color: #B8B8D1; margin: 8px 0;"><strong>Detected Language:</strong> ${detectedLangName}</p>
+                <p style="color: #B8B8D1; margin: 8px 0;"><strong>Target Language:</strong> ${langName}</p>
+                <p style="color: #B8B8D1; margin: 8px 0;"><strong>Processing:</strong> ⚡ Fast Mode</p>
+            `;
+            
+            const extractedTextDiv = document.getElementById('extractedText');
+            extractedTextDiv.style.color = '#E8E8E8';
+            extractedTextDiv.textContent = data.original_text;
+            
+            if (data.translated_text && data.translated_text !== data.original_text) {
+                document.getElementById('translatedSection').style.display = 'block';
+                const translatedTextDiv = document.getElementById('translatedText');
+                translatedTextDiv.style.color = '#E8E8E8';
+                translatedTextDiv.textContent = data.translated_text;
+            } else {
+                document.getElementById('translatedSection').style.display = 'none';
+            }
+            
+            const summaryTextDiv = document.getElementById('summaryText');
+            summaryTextDiv.style.color = '#E8E8E8';
+            summaryTextDiv.textContent = data.summary;
+            
+            const stats = document.getElementById('stats');
+            stats.innerHTML = `
+                <div class="stat-item">
+                    <div class="stat-number">${data.word_count}</div>
+                    <div class="stat-label">Original Words</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">${data.summary_word_count}</div>
+                    <div class="stat-label">Summary Words</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">${Math.round((data.summary_word_count / data.word_count) * 100)}%</div>
+                    <div class="stat-label">Compression</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">⚡</div>
+                    <div class="stat-label">Fast Mode</div>
+                </div>
+            `;
+            
+            if (data.audio_file) {
+                const audioPlayer = document.getElementById('audioPlayer');
+                audioPlayer.innerHTML = `
+                    <h3 style="color: #7C4DFF; margin-bottom: 15px; font-weight: 700;">🔊 Audio Summary (${langName})</h3>
+                    <audio controls style="width: 100%; max-width: 500px; margin: 10px auto;">
+                        <source src="/audio/${data.audio_file.split('/').pop()}" type="audio/mpeg">
+                        Your browser does not support the audio element.
+                    </audio>
+                    <p style="color: #B8B8D1; font-size: 14px; margin-top: 10px;"><small>💡 Use voice commands for hands-free control</small></p>
+                `;
+            }
+            
+            document.getElementById('resultsSection').style.display = 'block';
+        }
+        
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.textContent = message;
+            statusDiv.className = `status-message ${type}`;
+            statusDiv.setAttribute('aria-live', 'polite');
+            
+            setTimeout(() => {
+                statusDiv.textContent = '';
+                statusDiv.className = 'status-message';
+            }, 6000);
+        }
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'u') {
+                e.preventDefault();
+                document.getElementById('fileInput').click();
+                showStatus('File upload dialog opened', 'info');
+            }
+            
+            if (e.ctrlKey && e.key === 'h') {
+                e.preventDefault();
+                showVoiceHelp();
+            }
+            
+            if (e.key === 'Escape') {
+                document.getElementById('statusMessage').textContent = '';
+                document.getElementById('statusMessage').className = 'status-message';
+            }
+        });
+        
+        function showVoiceHelp() {
+            const helpText = currentLanguage === 'hi' 
+                ? 'आवाज़ कमांड के लिए "आवाज़" कहें। मदद के लिए "मदद" कहें।'
+                : 'Say "Voice" to activate voice control. Say "Help" for more information.';
+            showStatus(helpText, 'info');
+        }
+        
+        document.querySelectorAll('.lang-option').forEach(option => {
+            option.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    selectTargetLanguage(option.dataset.lang);
+                }
+            });
+        });
+        
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                if (currentLanguage === 'hi') {
+                    showStatus('एडुविज़न तैयार है! ऊपर फाइल अपलोड करें, फिर "आवाज़" कहें।', 'info');
+                } else {
+                    showStatus('EduVision ready! Upload your file above, then say "Voice" to activate.', 'info');
+                }
+            }, 2000);
+        });
+        
+        window.addEventListener('error', (e) => {
+            showStatus('An error occurred. Please try again.', 'error');
+            console.error('Application error:', e);
+        });
+        
+        window.addEventListener('online', () => {
+            showStatus('Internet connection restored. All features available.', 'success');
+        });
+        
+        window.addEventListener('offline', () => {
+            showStatus('Internet connection lost. Voice recognition may be limited.', 'error');
+        });
+    </script>
+</body>
+</html>
